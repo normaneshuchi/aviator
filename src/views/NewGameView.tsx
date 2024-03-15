@@ -6,19 +6,10 @@ import {IGameState, IPlaneDirection} from "../types/game.type.ts";
 import useClearCanvas from "../hooks/useClearCanvas.ts";
 import {backgroundImage, planeSprites, spinnerImage} from "../common/images.ts";
 import {COLORS} from "../common/colors.ts";
-import {
-    AUDIO_FLY_AWAY,
-    AUDIO_START,
-    BORDER_RADIUS,
-    CANVAS_PADDING,
-    PLANE_FRAME_RATE,
-    PLANE_HEIGHT,
-    PLANE_WIDTH,
-    PLAYING,
-    WAITING
-} from "../common/constants.ts";
+import {CANVAS_PADDING, PLANE_FRAME_RATE, PLANE_HEIGHT, PLANE_WIDTH, PLAYING, WAITING} from "../common/constants.ts";
 import {useAudio} from "../hooks/audio/useAudio.ts";
 import {GRADIENTS} from "../styles/colors.ts";
+import useAnimate from "../hooks/canvas/useAnimate.ts";
 
 
 const gameStyles = css({
@@ -38,7 +29,7 @@ const gameStyles = css({
 
 export const NewGameView: FC<ComponentPropsWithoutRef<'div'>> = () => {
   const containerRef = useRef<HTMLDivElement>(null);
-  const canvasRef = useRef<HTMLCanvasElement>(null);
+  // const canvasRef = useRef<HTMLCanvasElement>(null);
   const bgCanvasRef = useRef<HTMLCanvasElement>(null);
   const textCanvasRef = useRef<HTMLCanvasElement>(null);
   const waitingCanvasRef = useRef<HTMLCanvasElement>(null);
@@ -47,7 +38,10 @@ export const NewGameView: FC<ComponentPropsWithoutRef<'div'>> = () => {
 
   const clearWaitingCanvas = useClearCanvas({canvasRef: waitingCanvasRef});
   const clearTextCanvas = useClearCanvas({canvasRef: textCanvasRef});
-  const clearBgCanvas = useClearCanvas({canvasRef: bgCanvasRef})
+  const clearBgCanvas = useClearCanvas({canvasRef: bgCanvasRef});
+
+  const {startAnimation,resizeCanvas, canvasRef} = useAnimate();
+
 
   let currentMultiplier = 1;
 
@@ -310,83 +304,63 @@ export const NewGameView: FC<ComponentPropsWithoutRef<'div'>> = () => {
   }
 
   useEffect(() => {
-    if (!canvasRef.current || !containerRef.current) return;
-    const ctx = canvasRef.current.getContext('2d');
-    const bgCtx = bgCanvasRef.current?.getContext('2d');
-    const textCtx = textCanvasRef.current?.getContext('2d');
-    const waitingCtx = waitingCanvasRef.current?.getContext('2d');
-
+    if (!containerRef.current) return;
+    const currentWidth = containerRef.current.clientWidth;
+    const currentHeight = containerRef.current.clientHeight;
     const resizeAndStyleCanvases = () => {
-      if (!containerRef.current || !ctx || !bgCtx || !textCtx || !waitingCtx) return;
-      const currentWidth = containerRef.current.clientWidth;
-      const currentHeight = currentWidth;
-      if (ctx.canvas.width !== currentWidth || ctx.canvas.height !== currentHeight) {
-        setCanvasWidth(currentWidth);
-        setCanvasHeight(currentHeight);
-        ctx.canvas.width = currentWidth;
-        ctx.canvas.height = currentHeight;
-        bgCtx.canvas.width = currentWidth - 20;
-        bgCtx.canvas.height = currentHeight - 20;
-        textCtx.canvas.width = currentWidth;
-        textCtx.canvas.height = currentHeight;
-        waitingCtx.canvas.width = currentWidth;
-        waitingCtx.canvas.height = currentHeight;
-      }
-      ctx.canvas.style.borderRadius = BORDER_RADIUS;
-      textCtx.canvas.style.borderRadius = BORDER_RADIUS;
-      waitingCtx.canvas.style.borderRadius = BORDER_RADIUS;
+      resizeCanvas({width: currentWidth, height: currentHeight});
     }
-
-    resizeAndStyleCanvases();
     const resizeObserver = new ResizeObserver(resizeAndStyleCanvases);
     resizeObserver.observe(containerRef.current);
     return () => resizeObserver.disconnect();
   }, [canvasRef, containerRef]);
 
   useEffect(() => {
-    switch (gameState) {
-      case 'WAITING':
-        clearTextCanvas();
-        animatePlane();
-        drawWaiting()
-        setTimeout(() => {
-          // setMainMultiplier(getRandomNumber(1, 12));
-          setMainMultiplier(14.4555)
-          setGameState(PLAYING);
-        }, 6000)
-        break;
-      case 'PLAYING':
-        playSegment(AUDIO_START);
-        cancelAnimationFrame(spinnerFrameId);
-        clearWaitingCanvas();
-        drawBackground();
-        animateMultiplier();
-        animatePlane();
-        break;
-      case 'ENDED':
-        playSegment(AUDIO_FLY_AWAY);
-        animatePlane();
-        animateMultiplier();
-        cancelAnimationFrame(backgroundFrameId);
-        drawBackground();
-        clearBgCanvas();
-        setTimeout(() => {
-          setGameState(WAITING);
-        }, 5000)
-        break;
-      default:
-        break;
-    }
+    // switch (gameState) {
+    //   case 'WAITING':
+    //     clearTextCanvas();
+    //     animatePlane();
+    //     drawWaiting()
+    //     setTimeout(() => {
+    //       // setMainMultiplier(getRandomNumber(1, 12));
+    //       setMainMultiplier(14.4555)
+    //       setGameState(PLAYING);
+    //     }, 6000)
+    //     break;
+    //   case 'PLAYING':
+    //     playSegment(AUDIO_START);
+    //     cancelAnimationFrame(spinnerFrameId);
+    //     clearWaitingCanvas();
+    //     drawBackground();
+    //     animateMultiplier();
+    //     animatePlane();
+    //     break;
+    //   case 'ENDED':
+    //     playSegment(AUDIO_FLY_AWAY);
+    //     animatePlane();
+    //     animateMultiplier();
+    //     cancelAnimationFrame(backgroundFrameId);
+    //     drawBackground();
+    //     clearBgCanvas();
+    //     setTimeout(() => {
+    //       setGameState(WAITING);
+    //     }, 5000)
+    //     break;
+    //   default:
+    //     break;
+    // }
+
+    startAnimation({gameState: gameState, multiplier: mainMultiplier})
   }, [gameState])
 
   return (<div style={{minHeight: canvasHeight, minWidth: canvasWidth}} css={gameStyles}>
     <audio ref={bgAudioRef} src={BgAudioFile} loop/>
     <audio ref={audioRef} src={AudioFile}/>
     <div ref={containerRef} style={{width: '100%', minHeight: canvasHeight, borderRadius: 8}}>
-      <canvas style={{background: GRADIENTS.dark}} ref={bgCanvasRef}/>
-      <canvas ref={canvasRef}/>
-      <canvas ref={textCanvasRef}/>
-      <canvas style={{display: gameState === 'WAITING' ? 'block' : 'none'}} ref={waitingCanvasRef}/>
+      {/*<canvas  ref={bgCanvasRef}/>*/}
+      <canvas style={{background: GRADIENTS.dark}} ref={canvasRef}/>
+      {/*<canvas ref={textCanvasRef}/>*/}
+      {/*<canvas style={{display: gameState === 'WAITING' ? 'block' : 'none'}} ref={waitingCanvasRef}/>*/}
     </div>
   </div>)
 }

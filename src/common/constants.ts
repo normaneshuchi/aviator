@@ -5,7 +5,7 @@ export const BORDER_RADIUS = '8px';
 export const PLANE_WIDTH = window.innerWidth > breakpoints[0] ? 150 : 75;
 export const PLANE_HEIGHT = window.innerWidth > breakpoints[0] ? 74 : 37;
 
-export const CANVAS_PADDING = 16;
+export const CANVAS_PADDING = window.innerWidth > breakpoints[0] ? 16 : 8;
 
 export const WAITING = 'WAITING';
 export const PLAYING  = 'PLAYING';
